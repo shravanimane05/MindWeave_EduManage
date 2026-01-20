@@ -42,7 +42,7 @@ const UploadPage: React.FC<{user: User, onRefresh: () => void}> = ({ user, onRef
            <ul className="text-[10px] text-blue-500 font-black uppercase space-y-3">
              <li className="flex items-center"><span className="w-1.5 h-1.5 bg-blue-300 rounded-full mr-3"></span> Automated Risk Recalculation</li>
              <li className="flex items-center"><span className="w-1.5 h-1.5 bg-blue-300 rounded-full mr-3"></span> Unit Test Comparative Analytics</li>
-             <li className="flex items-center"><span className="w-1.5 h-1.5 bg-red-400 rounded-full mr-3 animate-ping"></span> Real-time WhatsApp Alerts for Attendance < 60%</li>
+             <li className="flex items-center"><span className="w-1.5 h-1.5 bg-red-400 rounded-full mr-3 animate-ping"></span> Real-time WhatsApp Alerts for Attendance &lt; 60%</li>
            </ul>
         </div>
 

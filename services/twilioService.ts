@@ -1,6 +1,6 @@
 
 export const sendSMS = async (to: string, message: string) => {
-  console.log(`[TWILIO API] Initializing request to SID: ${.env.TWILIO_SID}`);
+  console.log(`[TWILIO API] Initializing request...`);
 
   console.log(`[TWILIO API] Sending SMS to ${to}: ${message}`);
   

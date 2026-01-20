@@ -1,18 +1,18 @@
 
 import React, { useState, useEffect } from 'react';
 import { Role, User } from './types';
-import Login from './pages/Login';
-import Sidebar from './components/Sidebar';
-import StudentDashboard from './pages/StudentDashboard';
-import TeacherDashboard from './pages/TeacherDashboard';
-import UploadPage from './pages/UploadPage';
-import StudentQueries from './pages/StudentQueries';
-import Chatbot from './components/Chatbot';
-import Analytics from './pages/Analytics';
-import QueryForm from './pages/QueryForm';
-import TeacherFeedback from './pages/TeacherFeedback';
-import RiskPredictor from './pages/RiskPredictor';
-import SearchStudent from './pages/SearchStudent';
+import Login from '../pages/Login';
+import Sidebar from '../components/Sidebar';
+import StudentDashboard from '../pages/StudentDashboard';
+import TeacherDashboard from '../pages/TeacherDashboard';
+import UploadPage from '../pages/UploadPage';
+import StudentQueries from '../pages/StudentQueries';
+import Chatbot from '../components/Chatbot';
+import Analytics from '../pages/Analytics';
+import QueryForm from '../pages/QueryForm';
+import TeacherFeedback from '../pages/TeacherFeedback';
+import RiskPredictor from '../pages/RiskPredictor';
+import SearchStudent from '../pages/SearchStudent';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
