@@ -30,22 +30,36 @@ class DBService {
   private teachers: any[] = [];
 
   constructor() {
-    // Initialize with fresh data - clears old data
-    this.students = JSON.parse(JSON.stringify(INITIAL_STUDENTS));
-    this.teachers = JSON.parse(JSON.stringify(INITIAL_TEACHERS));
+    const storedStudents = localStorage.getItem('students');
+    const storedTeachers = localStorage.getItem('teachers');
     
-    // Save to localStorage
-    localStorage.setItem('students', JSON.stringify(this.students));
-    localStorage.setItem('teachers', JSON.stringify(this.teachers));
-    localStorage.setItem('queries', JSON.stringify([]));
+    // Load from localStorage if data exists, otherwise initialize with fresh data
+    if (storedStudents) {
+      this.students = JSON.parse(storedStudents);
+    } else {
+      this.students = JSON.parse(JSON.stringify(INITIAL_STUDENTS));
+      localStorage.setItem('students', JSON.stringify(this.students));
+    }
+    
+    if (storedTeachers) {
+      this.teachers = JSON.parse(storedTeachers);
+    } else {
+      this.teachers = JSON.parse(JSON.stringify(INITIAL_TEACHERS));
+      localStorage.setItem('teachers', JSON.stringify(this.teachers));
+    }
     
     const storedQueries = localStorage.getItem('queries');
     this.queries = storedQueries ? JSON.parse(storedQueries) : [];
+    localStorage.setItem('queries', JSON.stringify(this.queries));
   }
 
   private save() {
     localStorage.setItem('students', JSON.stringify(this.students));
     localStorage.setItem('queries', JSON.stringify(this.queries));
+  }
+
+  getAllStudents() {
+    return this.students;
   }
 
   getStudentsByDivision(division: string) {
@@ -122,6 +136,14 @@ class DBService {
     const highRisk = divStudents.filter(s => s.riskScore > 70).length;
     const avgCgpa = divStudents.length > 0 ? (divStudents.reduce((acc, s) => acc + s.cgpa, 0) / divStudents.length).toFixed(2) : 0;
     return { total, highRisk, avgCgpa };
+  }
+
+  resetDatabase() {
+    this.students = JSON.parse(JSON.stringify(INITIAL_STUDENTS));
+    this.teachers = JSON.parse(JSON.stringify(INITIAL_TEACHERS));
+    this.queries = [];
+    this.save();
+    localStorage.setItem('teachers', JSON.stringify(this.teachers));
   }
 }
 
