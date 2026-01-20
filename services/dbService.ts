@@ -257,7 +257,13 @@ class DBService {
     
     const storedQueries = localStorage.getItem('queries');
     this.queries = storedQueries ? JSON.parse(storedQueries) : [];
-    localStorage.setItem('queries', JSON.stringify(this.queries));
+    
+    console.log('🗄️ DBService initialized:', {
+      students: this.students.length,
+      teachers: this.teachers.length,
+      queries: this.queries.length,
+      queriesFromStorage: !!storedQueries
+    });
   }
 
   private save() {
@@ -468,7 +474,15 @@ class DBService {
   getQueriesForTeacher(division: string) {
     const divStudents = this.getStudentsByDivision(division);
     const divStudentPrns = divStudents.map(s => s.prn);
-    return this.queries.filter(q => divStudentPrns.includes(q.studentPrn));
+    const result = this.queries.filter(q => divStudentPrns.includes(q.studentPrn));
+    console.log(`🔍 getQueriesForTeacher(${division}):`, {
+      allQueries: this.queries.length,
+      divisionStudents: divStudents.length,
+      studentPRNs: divStudentPrns,
+      foundQueries: result.length,
+      queryDetails: result
+    });
+    return result;
   }
 
   resetDatabase() {
