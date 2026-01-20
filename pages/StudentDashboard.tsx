@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, Alert } from '../types';
 import { dbService } from '../services/dbService';
+import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 
 const StudentDashboard: React.FC<{ user: User }> = ({ user }) => {
   const [studentData, setStudentData] = useState<any>(null);
@@ -106,9 +107,9 @@ const StudentDashboard: React.FC<{ user: User }> = ({ user }) => {
           <p className="text-xs font-bold text-gray-500 uppercase">Attendance</p>
           <h2 className="text-3xl font-bold mt-2 text-gray-800">{studentData.attendance}%</h2>
         </div>
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-l-4 border-l-purple-500">
-          <p className="text-xs font-bold text-gray-500 uppercase">Mid-Sem Marks</p>
-          <h2 className="text-3xl font-bold mt-2 text-gray-800">{studentData.midsemMarks || 0}/50</h2>
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-l-4 border-l-red-500">
+          <p className="text-xs font-bold text-gray-500 uppercase">Alerts Count</p>
+          <h2 className="text-3xl font-bold mt-2 text-gray-800">{alerts.length}</h2>
         </div>
       </div>
 
@@ -137,25 +138,34 @@ const StudentDashboard: React.FC<{ user: User }> = ({ user }) => {
         </div>
 
         <div className="bg-white rounded-xl shadow-sm border p-6">
-          <h3 className="font-bold text-gray-800 mb-4">Performance Metrics</h3>
-          <div className="space-y-4">
-            <div>
-              <div className="flex justify-between text-sm mb-1">
-                <span className="text-gray-600">Attendance Progress</span>
-                <span className="font-bold">{studentData.attendance}%</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-green-500 h-2 rounded-full" style={{ width: `${studentData.attendance}%` }}></div>
-              </div>
+          <h3 className="font-bold text-gray-800 mb-4">Attendance Overview</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <PieChart>
+              <Pie
+                data={[
+                  { name: 'Present', value: studentData.attendance },
+                  { name: 'Absent', value: 100 - studentData.attendance }
+                ]}
+                cx="50%"
+                cy="50%"
+                innerRadius={60}
+                outerRadius={90}
+                paddingAngle={5}
+                dataKey="value"
+              >
+                <Cell fill="#10b981" />
+                <Cell fill="#ef4444" />
+              </Pie>
+            </PieChart>
+          </ResponsiveContainer>
+          <div className="flex justify-center gap-6 mt-4 text-sm">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+              <span className="text-gray-600">Present: {studentData.attendance}%</span>
             </div>
-            <div>
-              <div className="flex justify-between text-sm mb-1">
-                <span className="text-gray-600">Mid-Sem Performance</span>
-                <span className="font-bold">{Math.round((studentData.midsemMarks / 50) * 100)}%</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${(studentData.midsemMarks / 50) * 100}%` }}></div>
-              </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+              <span className="text-gray-600">Absent: {100 - studentData.attendance}%</span>
             </div>
           </div>
         </div>
