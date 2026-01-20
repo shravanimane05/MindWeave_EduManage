@@ -24,6 +24,8 @@ export interface StudentData {
   attendance: number;
   riskScore: number;
   backlogs: number;
+  midsemMarks?: number;
+  endsemMarks?: number;
   unitTest1?: number;
   unitTest2?: number;
   semesterMarks?: {
