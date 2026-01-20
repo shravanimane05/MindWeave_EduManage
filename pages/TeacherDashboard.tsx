@@ -35,6 +35,14 @@ const TeacherDashboard: React.FC<{ user: User }> = ({ user }) => {
     await sendAlertToStudent(student, 'Risk');
   };
 
+  const handleResetDatabase = () => {
+    if (window.confirm('⚠️ This will clear all data and reset to 10 students + 5 teachers. Continue?')) {
+      const result = dbService.resetDatabase();
+      alert(result.message);
+      window.location.reload();
+    }
+  };
+
   return (
     <div className="p-8 space-y-8 relative">
       {toast && (
@@ -53,7 +61,12 @@ const TeacherDashboard: React.FC<{ user: User }> = ({ user }) => {
         <div className="flex items-center space-x-4">
           <span className="font-bold uppercase tracking-wider">{user.name}</span>
         </div>
-        <div className="text-xs opacity-80">Div: {user.division}</div>
+        <div className="flex items-center space-x-6">
+          <button onClick={handleResetDatabase} className="px-3 py-1 bg-red-600 hover:bg-red-700 rounded-lg text-xs font-bold transition">
+            🔄 Reset DB
+          </button>
+          <div className="text-xs opacity-80">Div: {user.division}</div>
+        </div>
       </header>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
