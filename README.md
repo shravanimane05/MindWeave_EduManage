@@ -26,8 +26,8 @@ Student drop-outs are a significant challenge in educational institutions. Early
 
 * **Frontend:** React, TypeScript, HTML, CSS
 * **Backend:** Node.js / Express (handles AI API calls)
-* **AI Service:** Gemini API or other integrated AI service
-* **Database:** (if applicable, e.g., MongoDB / SQLite)
+* **AI Service:** Gemini API 
+* **Database:** MongoDB 
 * **Environment Variables:** `.env.local` for API keys
 
 ---
@@ -84,7 +84,7 @@ The app should now be accessible at `http://localhost:3000`
 
 ##  AI Prediction Workflow
 
-* Frontend collects student data through forms or uploads
+* Frontend collects student data through uploads
 * Data is sent to the backend via API endpoints
 * Backend forwards the data to the AI service (Gemini API)
 * AI predicts drop-out probability and returns actionable counselling suggestions
