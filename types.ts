@@ -45,6 +45,9 @@ export interface Query {
   module: string;
   date: string;
   status: 'Pending' | 'In Progress' | 'Solved';
+  teacherReply?: string;
+  teacherName?: string;
+  replyDate?: string;
 }
 
 export interface Feedback {

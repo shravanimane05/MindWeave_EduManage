@@ -263,6 +263,8 @@ class DBService {
   private save() {
     localStorage.setItem('students', JSON.stringify(this.students));
     localStorage.setItem('queries', JSON.stringify(this.queries));
+    localStorage.setItem('teachers', JSON.stringify(this.teachers));
+    console.log('💾 Database saved - Queries:', this.queries.length);
   }
 
   getAllStudents() {
@@ -421,6 +423,52 @@ class DBService {
       avgAttendance,
       avgMidsemMarks
     };
+  }
+
+  // Get query by ID
+  getQueryById(queryId: string) {
+    return this.queries.find(q => q.id === queryId);
+  }
+
+  // Get all queries submitted by a specific student
+  getStudentQueries(studentPrn: string) {
+    return this.queries.filter(q => q.studentPrn === studentPrn);
+  }
+
+  // Reply to a query (teacher functionality)
+  replyToQuery(queryId: string, teacherName: string, replyText: string) {
+    const query = this.queries.find(q => q.id === queryId);
+    if (query) {
+      query.teacherReply = replyText;
+      query.teacherName = teacherName;
+      query.replyDate = new Date().toISOString().split('T')[0];
+      this.save();
+      return query;
+    }
+    return null;
+  }
+
+  // Update query status (and optionally add reply)
+  updateQueryStatusWithReply(queryId: string, status: 'Pending' | 'In Progress' | 'Solved', teacherName?: string, replyText?: string) {
+    const query = this.queries.find(q => q.id === queryId);
+    if (query) {
+      query.status = status;
+      if (teacherName && replyText) {
+        query.teacherReply = replyText;
+        query.teacherName = teacherName;
+        query.replyDate = new Date().toISOString().split('T')[0];
+      }
+      this.save();
+      return query;
+    }
+    return null;
+  }
+
+  // Get all queries for a teacher's division
+  getQueriesForTeacher(division: string) {
+    const divStudents = this.getStudentsByDivision(division);
+    const divStudentPrns = divStudents.map(s => s.prn);
+    return this.queries.filter(q => divStudentPrns.includes(q.studentPrn));
   }
 
   resetDatabase() {
