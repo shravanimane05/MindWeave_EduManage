@@ -18,7 +18,7 @@ Student drop-outs are a significant challenge in educational institutions. Early
 * Interactive, user-friendly React frontend
 * Dashboard for visualizing student risk scores
 * Counselling recommendations for at-risk students
-* Easy deployment on local development or AI Studio
+* Easy deployment on local development
 
 ---
 
@@ -102,16 +102,9 @@ Contributions are welcome!
 4. Push to the branch
 5. Open a Pull Request
 
----
-
-##  License
-
-This project is licensed under the **MIT License**.
-
----
 
 ##  Acknowledgements
 
 * React and TypeScript documentation
-* AI Studio and Gemini API resources
+* Gemini API resources
 * Open-source frontend and backend libraries
