@@ -21,14 +21,19 @@ const TeacherQueryManager: React.FC<TeacherQueryManagerProps> = ({ teacher, onQu
   }, [teacher.division]);
 
   const loadQueries = () => {
+    console.log('👨‍🏫 Teacher info:', { name: teacher.name, division: teacher.division });
     const divisionQueries = dbService.getQueriesForTeacher(teacher.division || '');
+    console.log('📥 Loaded queries for teacher division', teacher.division, ':', {
+      count: divisionQueries.length,
+      queries: divisionQueries
+    });
     setQueries(divisionQueries);
     setLoading(false);
   };
 
   const handleReplySubmit = async () => {
     if (!selectedQuery || !replyText.trim()) {
-      alert('Please enter a reply');
+      alert('❌ Please enter a reply');
       return;
     }
 
@@ -36,23 +41,37 @@ const TeacherQueryManager: React.FC<TeacherQueryManagerProps> = ({ teacher, onQu
 
     try {
       console.log('📤 Sending reply to query:', selectedQuery.id);
-      dbService.updateQueryStatusWithReply(
+      console.log('Teacher:', teacher.name, 'Division:', teacher.division);
+      
+      // Update the query with reply
+      const updatedQuery = dbService.updateQueryStatusWithReply(
         selectedQuery.id,
         selectedQuery.status,
         teacher.name,
         replyText
       );
 
-      console.log('✅ Reply saved successfully');
+      console.log('✅ Reply saved:', updatedQuery);
+      
+      if (!updatedQuery) {
+        throw new Error('Failed to update query');
+      }
+
+      // Clear form
       setReplyText('');
-      setSelectedQuery(null);
+      
+      // Reload all queries to reflect the change
       loadQueries();
+      
+      // Update selected query to show the reply
+      setSelectedQuery(updatedQuery);
+
       if (onQueryUpdated) onQueryUpdated();
 
-      alert('✅ Reply sent successfully!');
+      alert('✅ Reply sent successfully to student!');
     } catch (error) {
       console.error('❌ Error sending reply:', error);
-      alert('Failed to send reply. Please try again.');
+      alert('❌ Failed to send reply: ' + (error instanceof Error ? error.message : 'Unknown error'));
     } finally {
       setSubmittingReply(false);
     }
@@ -60,14 +79,22 @@ const TeacherQueryManager: React.FC<TeacherQueryManagerProps> = ({ teacher, onQu
 
   const handleStatusChange = async (queryId: string, newStatus: 'Pending' | 'In Progress' | 'Solved') => {
     try {
+      console.log('📝 Updating query status:', queryId, 'to', newStatus);
       dbService.updateQueryStatus(queryId, newStatus);
+      
+      // Reload all queries
       loadQueries();
+      
+      // Update the selected query if it's the one being changed
       if (selectedQuery?.id === queryId) {
         const updatedQuery = dbService.getQueryById(queryId);
-        if (updatedQuery) setSelectedQuery(updatedQuery);
+        if (updatedQuery) {
+          setSelectedQuery(updatedQuery);
+          console.log('✅ Query status updated:', updatedQuery);
+        }
       }
     } catch (error) {
-      console.error('Error updating status:', error);
+      console.error('❌ Error updating status:', error);
       alert('Failed to update status. Please try again.');
     }
   };
