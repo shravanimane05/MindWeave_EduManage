@@ -56,13 +56,35 @@ const TeacherDashboard: React.FC<{ user: User }> = ({ user }) => {
         <div className="text-xs opacity-80">Div: {user.division}</div>
       </header>
 
-      <div className="flex items-center space-x-4 bg-white p-6 rounded-xl shadow-sm border w-fit">
-        <div className="p-3 bg-blue-100 text-blue-700 rounded-full">
-          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a7 7 0 00-7 7v1h11v-1a7 7 0 00-7-7z" /></svg>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
+        <div className="bg-white p-6 rounded-3xl border shadow-sm flex items-center space-x-6">
+          <div className="w-14 h-14 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-lg">
+            <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a4 4 0 00-4-4h-1M9 20H4v-2a4 4 0 014-4h1m4-6a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+          </div>
+          <div>
+            <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">Total Students</p>
+            <h2 className="text-4xl font-black text-gray-800 tracking-tighter">{stats.total}</h2>
+          </div>
         </div>
-        <div>
-          <p className="text-xs text-gray-500 font-bold uppercase">Total Students</p>
-          <h2 className="text-3xl font-bold text-gray-800">{stats.total}</h2>
+
+        <div className="bg-white p-6 rounded-3xl border shadow-sm flex items-center space-x-6">
+          <div className="w-14 h-14 rounded-xl bg-red-500 flex items-center justify-center text-white shadow-lg">
+            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
+          </div>
+          <div>
+            <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">High Risk</p>
+            <h2 className="text-4xl font-black text-gray-800 tracking-tighter">{stats.highRisk}</h2>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-3xl border shadow-sm flex items-center space-x-6">
+          <div className="w-14 h-14 rounded-xl bg-yellow-400 flex items-center justify-center text-white shadow-lg">
+            <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M2 5a2 2 0 012-2h12a2 2 0 012 2v7a2 2 0 01-2 2H8l-4 4V5z" /></svg>
+          </div>
+          <div>
+            <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">Pending Queries</p>
+            <h2 className="text-4xl font-black text-gray-800 tracking-tighter">{dbService.getAllQueries(user.division!).filter(q => q.status === 'pending').length.toString().padStart(2, '0')}</h2>
+          </div>
         </div>
       </div>
 
