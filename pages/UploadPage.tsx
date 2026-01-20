@@ -29,12 +29,19 @@ const UploadPage: React.FC<UploadPageProps> = ({ user, onRefresh }) => {
       ];
       
       await dbService.uploadStudentData(mockData);
-      
-      setRecentUploads([{ name: file.name, date: new Date().toISOString().split('T')[0], status: 'Processed' }, ...recentUploads]);
-      setIsUploading(false);
-      alert('Data uploaded and merged successfully!');
-      onRefresh();
-    }, 2000);
+        
+        setRecentUploads([{ name: file.name, date: new Date().toISOString().split('T')[0], status: 'Processed' }, ...recentUploads]);
+        setIsUploading(false);
+        alert(`Successfully uploaded ${data.length} student records!`);
+        onRefresh();
+      } catch (error) {
+        console.error('Error processing file:', error);
+        alert('Error processing file. Please ensure it is a valid CSV file.');
+        setIsUploading(false);
+      }
+    };
+    
+    reader.readAsText(file);
   };
 
   return (
