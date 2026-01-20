@@ -20,15 +20,56 @@ const UploadPage: React.FC<UploadPageProps> = ({ user, onRefresh }) => {
     if (!file) return;
 
     setIsUploading(true);
-    // Simulate processing CSV/Excel and merging
-    setTimeout(async () => {
-      // Mocked merged data for the test students
-      const mockData = [
-        { prn: 'PRN9561', unitTest2: 24, cgpa: 8.6 },
-        { prn: 'PRN8788', unitTest2: 15, riskScore: 85 }
-      ];
-      
-      await dbService.uploadStudentData(mockData);
+    
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const content = event.target?.result as string;
+        const lines = content.split('\n');
+        
+        // Parse CSV/Excel data
+        const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+        const data = [];
+        
+        for (let i = 1; i < lines.length; i++) {
+          if (!lines[i].trim()) continue; // Skip empty lines
+          
+          const values = lines[i].split(',').map(v => v.trim());
+          const record: any = {};
+          
+          headers.forEach((header, idx) => {
+            const value = values[idx];
+            // Convert numeric fields
+            if (header === 'prn') {
+              record[header] = value;
+            } else if (header === 'unitttest2' || header === 'unittest2' || header === 'unittext2') {
+              record['unitTest2'] = parseInt(value) || 0;
+            } else if (header === 'attendance') {
+              record[header] = parseInt(value) || 0;
+            } else if (header === 'cgpa') {
+              record[header] = parseFloat(value) || 0;
+            } else if (header === 'riskscore') {
+              record['riskScore'] = parseInt(value) || 50;
+            } else if (header === 'backlogs') {
+              record[header] = parseInt(value) || 0;
+            } else if (header === 'name' || header === 'email' || header === 'phone' || header === 'division') {
+              record[header] = value;
+            }
+          });
+          
+          if (record.prn) {
+            data.push(record);
+          }
+        }
+        
+        if (data.length === 0) {
+          alert('No valid data found in the file. Make sure it has a PRN column and data rows.');
+          setIsUploading(false);
+          return;
+        }
+        
+        // Upload the parsed data to database
+        await dbService.uploadStudentData(data);
         
         setRecentUploads([{ name: file.name, date: new Date().toISOString().split('T')[0], status: 'Processed' }, ...recentUploads]);
         setIsUploading(false);
