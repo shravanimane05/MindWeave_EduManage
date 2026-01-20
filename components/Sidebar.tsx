@@ -14,7 +14,7 @@ const Sidebar: React.FC<SidebarProps> = ({ role, activeTab, setActiveTab, onLogo
   const studentItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Icons.Dashboard },
     { id: 'analytics', label: 'Analytics', icon: Icons.Analytics },
-    { id: 'query', label: 'Query Form', icon: Icons.Query },
+    { id: 'query', label: 'My Queries', icon: Icons.Query },
     { id: 'feedback', label: 'Teacher Feedback', icon: Icons.Feedback },
   ];
 
@@ -23,7 +23,7 @@ const Sidebar: React.FC<SidebarProps> = ({ role, activeTab, setActiveTab, onLogo
     { id: 'risk', label: 'Risk Predictor', icon: Icons.Risk },
     { id: 'search', label: 'Search Student', icon: Icons.Search },
     { id: 'upload', label: 'Upload Data', icon: Icons.Upload },
-    { id: 'query', label: 'Student Queries', icon: Icons.Query },
+    { id: 'query', label: 'Manage Queries', icon: Icons.Query },
   ];
 
   const items = role === Role.STUDENT ? studentItems : teacherItems;
