@@ -13,6 +13,12 @@ const QueryPage: React.FC<{ user: User }> = ({ user }) => {
 
   useEffect(() => {
     loadQueries();
+    // Reload queries every 2 seconds to check for teacher replies
+    const interval = setInterval(() => {
+      console.log('🔄 Auto-refreshing queries...');
+      loadQueries();
+    }, 2000);
+    return () => clearInterval(interval);
   }, [user.prn]);
 
   const loadQueries = () => {
