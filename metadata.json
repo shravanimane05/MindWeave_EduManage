@@ -1,0 +1,9 @@
+
+{
+  "name": "EduManage Portal",
+  "description": "A comprehensive AI-based educational management system for student tracking, risk prediction, and automated alerts.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
