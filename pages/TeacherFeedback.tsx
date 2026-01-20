@@ -1,46 +1,72 @@
+import React, { useState, useEffect } from 'react';
+import { Query, User } from '../types';
+import { dbService } from '../services/dbService';
+import { MessageCircle } from 'lucide-react';
 
-import React from 'react';
-import { Feedback } from '../types';
+const TeacherFeedback: React.FC<{ user?: User }> = ({ user }) => {
+  const [queries, setQueries] = useState<Query[]>([]);
+  const [loading, setLoading] = useState(true);
 
-const FEEDBACKS: Feedback[] = [
-  { id: '1', teacherName: 'Dr. Smith', subject: 'Data Structures', content: 'Excellent performance on recent assignments. Keep up the good work!', date: '2025-01-10', rating: 5, sentiment: 'Positive' },
-  { id: '2', teacherName: 'Prof. Johnson', subject: 'Physics', content: 'Need to improve lab attendance. Please focus more on practical sessions.', date: '2025-01-12', rating: 3, sentiment: 'Neutral' },
-  { id: '3', teacherName: 'Dr. Williams', subject: 'Mathematics', content: 'Good understanding of concepts. Work on solving complex problems faster.', date: '2025-01-14', rating: 4, sentiment: 'Positive' },
-];
+  useEffect(() => {
+    // Get current logged-in user from localStorage
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+      const currentUser = JSON.parse(savedUser);
+      if (currentUser.prn) {
+        // Student - get their queries with teacher feedback
+        const studentQueries = dbService.getStudentQueries(currentUser.prn);
+        setQueries(studentQueries.filter(q => q.teacherReply));
+      }
+    }
+    setLoading(false);
+  }, []);
 
-const TeacherFeedback: React.FC = () => {
+  if (loading) {
+    return <div className="p-8">Loading...</div>;
+  }
+
   return (
     <div className="p-8 space-y-6">
       <header className="bg-[#1e3a8a] text-white p-4 rounded-lg shadow-md">
-        <h2 className="text-xl font-bold">Teacher Feedback</h2>
+        <h2 className="text-xl font-bold">Teacher Feedback on Your Queries</h2>
       </header>
 
-      <div className="space-y-4">
-        {FEEDBACKS.map(f => (
-          <div key={f.id} className="bg-white p-6 rounded-xl border shadow-sm relative overflow-hidden">
-            <div className="flex justify-between items-start">
-              <div>
-                <h3 className="font-bold text-lg text-gray-800">{f.teacherName}</h3>
-                <p className="text-sm text-blue-600 font-medium mb-3">{f.subject}</p>
-                <p className="text-gray-600 text-sm leading-relaxed">{f.content}</p>
+      {queries.length === 0 ? (
+        <div className="bg-white p-12 rounded-xl border text-center">
+          <MessageCircle className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+          <p className="text-gray-500 text-lg">No feedback received yet</p>
+          <p className="text-gray-400 text-sm mt-2">Submit a query to get teacher feedback</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {queries.map(query => (
+            <div key={query.id} className="bg-white p-6 rounded-xl border shadow-sm relative overflow-hidden">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h3 className="font-bold text-lg text-gray-800">{query.teacherName}</h3>
+                  <p className="text-sm text-blue-600 font-medium mb-2">{query.title}</p>
+                  <p className="text-gray-600 text-sm leading-relaxed">{query.teacherReply}</p>
+                </div>
               </div>
-              <div className="flex items-center text-yellow-500">
-                {[...Array(5)].map((_, i) => (
-                  <svg key={i} className={`w-5 h-5 ${i < f.rating ? 'fill-current' : 'text-gray-200'}`} viewBox="0 0 20 20">
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                  </svg>
-                ))}
+              <div className="mt-4 flex justify-between items-center text-xs">
+                <span className="text-gray-500">{query.replyDate}</span>
+                <div className="flex items-center gap-2">
+                  <span className={`font-bold px-3 py-1 rounded ${
+                    query.status === 'Solved' ? 'bg-green-100 text-green-700' :
+                    query.status === 'In Progress' ? 'bg-blue-100 text-blue-700' :
+                    'bg-yellow-100 text-yellow-700'
+                  }`}>
+                    {query.status}
+                  </span>
+                </div>
+              </div>
+              <div className="mt-3 text-xs text-gray-400 border-t pt-3">
+                <p><strong>Your Query:</strong> {query.description}</p>
               </div>
             </div>
-            <div className="mt-4 flex justify-between items-center text-xs text-gray-400">
-              <span>{f.date}</span>
-              <span className={`font-bold px-2 py-0.5 rounded ${
-                f.sentiment === 'Positive' ? 'text-green-600 bg-green-50' : 'text-yellow-600 bg-yellow-50'
-              }`}>{f.sentiment}</span>
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
