@@ -1,6 +1,7 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Role, User } from '../types';
+import { dbService } from '../services/dbService';
 
 interface LoginProps {
   onLogin: (user: User) => void;
@@ -11,6 +12,8 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<Role>(Role.STUDENT);
   const [error, setError] = useState('');
+  const [students, setStudents] = useState<any[]>([]);
+  const [teachers, setTeachers] = useState<any[]>([]);
   
   // Forgot Password States
   const [showForgot, setShowForgot] = useState(false);
@@ -18,28 +21,55 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [forgotEmail, setForgotEmail] = useState('');
   const [otp, setOtp] = useState('');
 
+  useEffect(() => {
+    // Load students and teachers from database
+    setStudents(dbService.getAllStudents());
+    setTeachers(dbService.getAllTeachers());
+  }, []);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    
     if (!username || !password) {
       setError('Please enter both username and password');
       return;
     }
+
     if (role === Role.STUDENT) {
-      if (username === 'prerna' || username === 'shravni') {
-         onLogin({
-           id: username === 'prerna' ? '1' : '2',
-           username,
-           name: username === 'prerna' ? 'Prerna Shirsath' : 'Shravni Morkhade',
-           role: Role.STUDENT,
-           prn: username === 'prerna' ? 'PRN9561' : 'PRN8788',
-           division: 'A'
-         });
-      } else { setError('Invalid student credentials'); }
+      // Check if username is a PRN
+      const student = students.find(s => 
+        s.prn.toLowerCase() === username.toLowerCase() || 
+        s.name.toLowerCase().includes(username.toLowerCase())
+      );
+      
+      if (student && password === 'student123') {
+        onLogin({
+          id: student.id,
+          username: student.prn,
+          name: student.name,
+          role: Role.STUDENT,
+          prn: student.prn,
+          division: student.division
+        });
+      } else {
+        setError('Invalid student credentials. Use PRN or Name with password "student123"');
+      }
     } else {
-      if (username === 'teacher_a' && password === 'admin') {
-        onLogin({ id: 't1', username: 'teacher_a', name: 'Dr. John Smith', role: Role.TEACHER, division: 'A' });
-      } else { setError('Invalid teacher credentials'); }
+      // Teacher login
+      const teacher = teachers.find(t => t.username === username);
+      
+      if (teacher && password === 'teacher123') {
+        onLogin({
+          id: teacher.id,
+          username: teacher.username,
+          name: teacher.name,
+          role: Role.TEACHER,
+          division: teacher.division
+        });
+      } else {
+        setError('Invalid teacher credentials. Password: "teacher123"');
+      }
     }
   };
 
