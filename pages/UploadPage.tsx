@@ -27,7 +27,7 @@ const UploadPage: React.FC<UploadPageProps> = ({ user, onRefresh }) => {
         const content = event.target?.result as string;
         const lines = content.split('\n');
         
-        // Parse CSV/Excel data
+        // Parse CSV/Excel data - expecting PRN and marks columns
         const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
         const data = [];
         
@@ -39,19 +39,16 @@ const UploadPage: React.FC<UploadPageProps> = ({ user, onRefresh }) => {
           
           headers.forEach((header, idx) => {
             const value = values[idx];
-            // Convert numeric fields
             if (header === 'prn') {
               record[header] = value;
-            } else if (header === 'unitttest2' || header === 'unittest2' || header === 'unittext2') {
-              record['unitTest2'] = parseInt(value) || 0;
+            } else if (header.includes('endsem') || header.includes('endmarks') || header.includes('marks')) {
+              record['endsemMarks'] = parseInt(value) || 0;
             } else if (header === 'attendance') {
               record[header] = parseInt(value) || 0;
             } else if (header === 'cgpa') {
               record[header] = parseFloat(value) || 0;
             } else if (header === 'riskscore') {
               record['riskScore'] = parseInt(value) || 50;
-            } else if (header === 'backlogs') {
-              record[header] = parseInt(value) || 0;
             } else if (header === 'name' || header === 'email' || header === 'phone' || header === 'division') {
               record[header] = value;
             }
@@ -69,15 +66,20 @@ const UploadPage: React.FC<UploadPageProps> = ({ user, onRefresh }) => {
         }
         
         // Upload the parsed data to database
-        await dbService.uploadStudentData(data);
+        const result = await dbService.uploadStudentData(data);
         
         setRecentUploads([{ name: file.name, date: new Date().toISOString().split('T')[0], status: 'Processed' }, ...recentUploads]);
         setIsUploading(false);
-        alert(`Successfully uploaded ${data.length} student records!`);
+        
+        let message = `Successfully updated ${result.matchedCount} student records with end sem marks!`;
+        if (result.unmatchedPRNs && result.unmatchedPRNs.length > 0) {
+          message += `\n\nWarning: ${result.unmatchedPRNs.length} PRNs not found: ${result.unmatchedPRNs.join(', ')}`;
+        }
+        alert(message);
         onRefresh();
       } catch (error) {
         console.error('Error processing file:', error);
-        alert('Error processing file. Please ensure it is a valid CSV file.');
+        alert('Error processing file. Please ensure it is a valid CSV file with PRN and marks columns.');
         setIsUploading(false);
       }
     };
