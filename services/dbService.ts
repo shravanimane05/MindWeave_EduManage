@@ -139,11 +139,22 @@ class DBService {
   }
 
   resetDatabase() {
+    // Clear all localStorage
+    localStorage.removeItem('students');
+    localStorage.removeItem('teachers');
+    localStorage.removeItem('queries');
+    
+    // Reinitialize with fresh data
     this.students = JSON.parse(JSON.stringify(INITIAL_STUDENTS));
     this.teachers = JSON.parse(JSON.stringify(INITIAL_TEACHERS));
     this.queries = [];
-    this.save();
+    
+    // Save fresh data to localStorage
+    localStorage.setItem('students', JSON.stringify(this.students));
     localStorage.setItem('teachers', JSON.stringify(this.teachers));
+    localStorage.setItem('queries', JSON.stringify(this.queries));
+    
+    return { success: true, message: 'Database reset to initial state with 10 students and 5 teachers' };
   }
 }
 
