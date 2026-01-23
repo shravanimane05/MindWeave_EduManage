@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { dbService } from '../services/dbService';
 import { User } from '../types';
 
@@ -10,10 +10,50 @@ interface UploadPageProps {
 
 const UploadPage: React.FC<UploadPageProps> = ({ user, onRefresh }) => {
   const [isUploading, setIsUploading] = useState(false);
-  const [recentUploads, setRecentUploads] = useState([
-    { name: 'student_data_jan2024.csv', date: '2024-01-15', status: 'Processed' },
-    { name: 'attendance_data.xlsx', date: '2024-01-10', status: 'Processed' },
-  ]);
+  const [recentUploads, setRecentUploads] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadUploads();
+  }, [user.division]);
+
+  const loadUploads = async () => {
+    try {
+      const response = await fetch(`http://localhost:4000/api/uploads/${user.division}`);
+      const data = await response.json();
+      setRecentUploads(data.uploads || []);
+    } catch (error) {
+      console.error('Error loading uploads:', error);
+      setRecentUploads([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Removed clear/reset database handlers to avoid destructive actions from the UI.
+
+  const handleDeleteUpload = async (uploadId: string, fileName: string) => {
+    if (!window.confirm(`Clear all uploaded data? This will remove marks and risk scores.`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch('http://localhost:4000/api/clear-marks', {
+        method: 'DELETE'
+      });
+      
+      const result = await response.json();
+      if (result.success) {
+        alert('All data cleared successfully!');
+        loadUploads();
+        onRefresh();
+      } else {
+        alert('Failed to clear data');
+      }
+    } catch (error) {
+      alert('Error clearing data');
+    }
+  };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -65,15 +105,34 @@ const UploadPage: React.FC<UploadPageProps> = ({ user, onRefresh }) => {
           return;
         }
         
-        // Upload the parsed data to database
-        const result = await dbService.uploadStudentData(data);
+        // Upload the parsed data to backend API (restricted to teacher's division)
+        const response = await fetch('http://localhost:4000/api/upload', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            data: data,
+            division: user.division,
+            fileName: file.name
+          })
+        });
+
+        const result = await response.json();
         
-        setRecentUploads([{ name: file.name, date: new Date().toISOString().split('T')[0], status: 'Processed' }, ...recentUploads]);
+        if (!response.ok) {
+          throw new Error(result.error || 'Upload failed');
+        }
+        
         setIsUploading(false);
+        loadUploads(); // Reload uploads from server
         
         let message = `Successfully updated ${result.matchedCount} student records with end sem marks!`;
-        if (result.unmatchedPRNs && result.unmatchedPRNs.length > 0) {
-          message += `\n\nWarning: ${result.unmatchedPRNs.length} PRNs not found: ${result.unmatchedPRNs.join(', ')}`;
+        if (result.unmatched && result.unmatched.length > 0) {
+          message += `\n\nWarning: ${result.unmatched.length} PRNs not found: ${result.unmatched.join(', ')}`;
+        }
+        if (result.blocked && result.blocked.length > 0) {
+          message += `\n\nBlocked: ${result.blocked.length} PRNs from other divisions: ${result.blocked.join(', ')}`;
         }
         alert(message);
         onRefresh();
@@ -131,23 +190,43 @@ const UploadPage: React.FC<UploadPageProps> = ({ user, onRefresh }) => {
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border overflow-hidden max-w-2xl mx-auto">
-        <div className="p-4 border-b bg-gray-50">
+        <div className="p-4 border-b bg-gray-50 flex justify-between items-center">
           <h3 className="font-bold text-gray-800">Recent Uploads</h3>
         </div>
-        <div className="divide-y">
-          {recentUploads.map((upload, i) => (
-            <div key={i} className="flex justify-between items-center p-4">
-              <div className="flex items-center space-x-3">
-                <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" /></svg>
-                <div>
-                  <p className="text-sm font-bold text-gray-800">{upload.name}</p>
-                  <p className="text-[10px] text-gray-400 uppercase font-bold">{upload.date}</p>
+        {loading ? (
+          <div className="p-8 text-center text-gray-500">Loading uploads...</div>
+        ) : recentUploads.length === 0 ? (
+          <div className="p-8 text-center text-gray-500">
+            <p className="text-sm">No uploads yet</p>
+            <p className="text-xs mt-1">Upload data files to see them here</p>
+          </div>
+        ) : (
+          <div className="divide-y">
+            {recentUploads.map((upload) => (
+              <div key={upload._id} className="flex justify-between items-center p-4">
+                <div className="flex items-center space-x-3">
+                  <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" /></svg>
+                  <div>
+                    <p className="text-sm font-bold text-gray-800">{upload.fileName}</p>
+                    <p className="text-[10px] text-gray-400 uppercase font-bold">
+                      {new Date(upload.uploadDate).toLocaleDateString()} • {upload.matchedCount} records
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] bg-green-100 text-green-700 px-3 py-1 rounded-full font-bold">{upload.status}</span>
+                  <button
+                    onClick={() => handleDeleteUpload(upload._id, upload.fileName)}
+                    className="text-red-500 hover:text-red-700 text-xs font-bold px-2 py-1 rounded hover:bg-red-50 transition"
+                    title="Delete upload and clear data"
+                  >
+                    🗑️ Delete
+                  </button>
                 </div>
               </div>
-              <span className="text-[10px] bg-green-100 text-green-700 px-3 py-1 rounded-full font-bold">{upload.status}</span>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

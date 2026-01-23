@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Query, User } from '../types';
-import { dbService } from '../services/dbService';
 import { Send, MessageCircle, CheckCircle, Clock } from 'lucide-react';
 
 interface TeacherQueryManagerProps {
@@ -20,15 +19,18 @@ const TeacherQueryManager: React.FC<TeacherQueryManagerProps> = ({ teacher, onQu
     loadQueries();
   }, [teacher.division]);
 
-  const loadQueries = () => {
-    console.log('👨‍🏫 Teacher info:', { name: teacher.name, division: teacher.division });
-    const divisionQueries = dbService.getQueriesForTeacher(teacher.division || '');
-    console.log('📥 Loaded queries for teacher division', teacher.division, ':', {
-      count: divisionQueries.length,
-      queries: divisionQueries
-    });
-    setQueries(divisionQueries);
-    setLoading(false);
+  const loadQueries = async () => {
+    try {
+      // Temporary localStorage solution
+      const allQueries = JSON.parse(localStorage.getItem('queries') || '[]');
+      const divisionQueries = allQueries.filter((q: any) => q.division === teacher.division);
+      setQueries(divisionQueries);
+    } catch (error) {
+      console.error('Error loading queries:', error);
+      setQueries([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleReplySubmit = async () => {
@@ -40,38 +42,28 @@ const TeacherQueryManager: React.FC<TeacherQueryManagerProps> = ({ teacher, onQu
     setSubmittingReply(true);
 
     try {
-      console.log('📤 Sending reply to query:', selectedQuery.id);
-      console.log('Teacher:', teacher.name, 'Division:', teacher.division);
-      
-      // Update the query with reply
-      const updatedQuery = dbService.updateQueryStatusWithReply(
-        selectedQuery.id,
-        selectedQuery.status,
-        teacher.name,
-        replyText
+      // Temporary localStorage solution
+      const allQueries = JSON.parse(localStorage.getItem('queries') || '[]');
+      const updatedQueries = allQueries.map((q: any) => 
+        q.id === selectedQuery.id ? { 
+          ...q, 
+          teacherReply: replyText.trim(),
+          teacherName: teacher.name,
+          replyDate: new Date().toISOString().split('T')[0],
+          status: 'Replied'
+        } : q
       );
-
-      console.log('✅ Reply saved:', updatedQuery);
+      localStorage.setItem('queries', JSON.stringify(updatedQueries));
       
-      if (!updatedQuery) {
-        throw new Error('Failed to update query');
-      }
-
-      // Clear form
       setReplyText('');
-      
-      // Reload all queries to reflect the change
       loadQueries();
-      
-      // Update selected query to show the reply
+      const updatedQuery = updatedQueries.find((q: any) => q.id === selectedQuery.id);
       setSelectedQuery(updatedQuery);
-
       if (onQueryUpdated) onQueryUpdated();
-
       alert('✅ Reply sent successfully to student!');
     } catch (error) {
       console.error('❌ Error sending reply:', error);
-      alert('❌ Failed to send reply: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      alert('❌ Failed to send reply');
     } finally {
       setSubmittingReply(false);
     }
@@ -79,19 +71,17 @@ const TeacherQueryManager: React.FC<TeacherQueryManagerProps> = ({ teacher, onQu
 
   const handleStatusChange = async (queryId: string, newStatus: 'Pending' | 'In Progress' | 'Solved') => {
     try {
-      console.log('📝 Updating query status:', queryId, 'to', newStatus);
-      dbService.updateQueryStatus(queryId, newStatus);
+      // Temporary localStorage solution
+      const allQueries = JSON.parse(localStorage.getItem('queries') || '[]');
+      const updatedQueries = allQueries.map((q: any) => 
+        q.id === queryId ? { ...q, status: newStatus } : q
+      );
+      localStorage.setItem('queries', JSON.stringify(updatedQueries));
       
-      // Reload all queries
       loadQueries();
-      
-      // Update the selected query if it's the one being changed
       if (selectedQuery?.id === queryId) {
-        const updatedQuery = dbService.getQueryById(queryId);
-        if (updatedQuery) {
-          setSelectedQuery(updatedQuery);
-          console.log('✅ Query status updated:', updatedQuery);
-        }
+        const updatedQuery = updatedQueries.find((q: any) => q.id === queryId);
+        setSelectedQuery(updatedQuery);
       }
     } catch (error) {
       console.error('❌ Error updating status:', error);

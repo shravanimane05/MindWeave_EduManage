@@ -1,7 +1,6 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, Query } from '../types';
-import { dbService } from '../services/dbService';
 
 const QueryForm: React.FC<{ user: User }> = ({ user }) => {
   const [title, setTitle] = useState('');
@@ -9,28 +8,57 @@ const QueryForm: React.FC<{ user: User }> = ({ user }) => {
   const [type, setType] = useState('Assignment Clarification');
   const [module, setModule] = useState('');
 
-  const queries = dbService.getAllQueries(user.division!).filter(q => q.studentId === user.id);
+  const [queries, setQueries] = useState<Query[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    loadQueries();
+  }, [user.division]);
+
+  const loadQueries = async () => {
+    try {
+      // Temporary localStorage solution
+      const allQueries = JSON.parse(localStorage.getItem('queries') || '[]');
+      const studentQueries = allQueries.filter((q: any) => q.studentPrn === user.prn);
+      setQueries(studentQueries);
+    } catch (error) {
+      console.error('Error loading queries:', error);
+      setQueries([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newQuery: Query = {
-      id: Math.random().toString(36).substr(2, 9),
-      studentId: user.id,
-      studentName: user.name,
-      prn: user.prn!,
-      division: user.division!,
-      title,
-      description,
-      type,
-      module,
-      date: new Date().toISOString().split('T')[0],
-      status: 'Pending'
-    };
-    dbService.addQuery(newQuery);
-    setTitle('');
-    setDescription('');
-    setModule('');
-    alert('Query submitted successfully!');
+    try {
+      const newQuery = {
+        id: Math.random().toString(36).substr(2, 9),
+        studentPrn: user.prn!,
+        studentName: user.name,
+        division: user.division!,
+        title,
+        description,
+        type,
+        module,
+        submittedDate: new Date().toISOString().split('T')[0],
+        status: 'Pending'
+      };
+      
+      // Temporary localStorage solution
+      const existingQueries = JSON.parse(localStorage.getItem('queries') || '[]');
+      existingQueries.push(newQuery);
+      localStorage.setItem('queries', JSON.stringify(existingQueries));
+      
+      setTitle('');
+      setDescription('');
+      setModule('');
+      alert('Query submitted successfully!');
+      loadQueries();
+    } catch (error) {
+      console.error('Error submitting query:', error);
+      alert('Error submitting query');
+    }
   };
 
   return (
@@ -102,37 +130,39 @@ const QueryForm: React.FC<{ user: User }> = ({ user }) => {
         <div className="p-4 border-b bg-gray-50">
           <h3 className="font-bold text-gray-800">Your Queries</h3>
         </div>
-        <table className="w-full text-sm text-left">
-          <thead className="bg-gray-50 text-gray-600 uppercase text-xs font-bold">
-            <tr>
-              <th className="px-6 py-3">Title</th>
-              <th className="px-6 py-3">Module</th>
-              <th className="px-6 py-3">Date</th>
-              <th className="px-6 py-3">Status</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {queries.length > 0 ? queries.map(q => (
-              <tr key={q.id}>
-                <td className="px-6 py-4 font-medium text-gray-800">{q.title}</td>
-                <td className="px-6 py-4 text-gray-500">{q.module}</td>
-                <td className="px-6 py-4 text-gray-500">{q.date}</td>
-                <td className="px-6 py-4">
-                  <span className={`px-3 py-1 rounded-full text-[10px] font-bold ${
-                    q.status === 'Solved' ? 'bg-green-100 text-green-700' :
-                    q.status === 'Pending' ? 'bg-yellow-100 text-yellow-700' : 'bg-blue-100 text-blue-700'
-                  }`}>
-                    {q.status}
-                  </span>
-                </td>
-              </tr>
-            )) : (
-              <tr>
-                <td colSpan={4} className="px-6 py-8 text-center text-gray-400 italic">No queries found.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+        <div className="space-y-4">
+          {queries.length > 0 ? queries.map(q => (
+            <div key={q.id} className="border rounded-lg p-4">
+              <div className="flex justify-between items-start mb-2">
+                <h4 className="font-bold text-gray-800">{q.title}</h4>
+                <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                  q.status === 'Solved' ? 'bg-green-100 text-green-700' :
+                  q.status === 'Pending' ? 'bg-yellow-100 text-yellow-700' : 'bg-blue-100 text-blue-700'
+                }`}>
+                  {q.status}
+                </span>
+              </div>
+              <p className="text-sm text-gray-600 mb-2">{q.description}</p>
+              <div className="text-xs text-gray-500 mb-3">
+                <span>Module: {q.module || 'N/A'}</span> • <span>Date: {q.submittedDate}</span>
+              </div>
+              {q.teacherReply && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-3">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm font-bold text-blue-900">Teacher Reply:</span>
+                    <span className="text-xs text-blue-700">{q.replyDate}</span>
+                  </div>
+                  <p className="text-sm text-blue-900">{q.teacherReply}</p>
+                  {q.teacherName && (
+                    <p className="text-xs text-blue-700 mt-1">- {q.teacherName}</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )) : (
+            <div className="text-center py-8 text-gray-400 italic">No queries found.</div>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -1,0 +1,6 @@
+@echo off
+echo Stopping any existing processes...
+taskkill /f /im node.exe 2>nul
+timeout /t 2 /nobreak >nul
+echo Starting application...
+npm run start:both

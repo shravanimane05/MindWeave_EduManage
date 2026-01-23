@@ -1,100 +1,159 @@
+import React, { useState, useEffect } from 'react';
 
-import React, { useState } from 'react';
+interface RiskPredictorProps {
+  division: string;
+}
 
-const RiskPredictor: React.FC = () => {
-  const [name, setName] = useState('');
-  const [subject, setSubject] = useState('');
-  const [marks, setMarks] = useState('');
-  const [attendance, setAttendance] = useState('');
-  const [prediction, setPrediction] = useState<number | null>(null);
+const RiskPredictor: React.FC<RiskPredictorProps> = ({ division }) => {
+  const [students, setStudents] = useState<any[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedStudent, setSelectedStudent] = useState<any>(null);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const handlePredict = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Simplified logic for simulation
-    const score = 100 - (Number(marks) * 0.6 + Number(attendance) * 0.4);
-    setPrediction(Math.max(0, Math.min(100, Math.round(score))));
+  useEffect(() => {
+    const fetchStudents = async () => {
+      try {
+        const response = await fetch(`http://localhost:4000/api/students?division=${division}`);
+        const data = await response.json();
+        setStudents(data.students || []);
+      } catch (error) {
+        console.error('Error fetching students:', error);
+        setStudents([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchStudents();
+  }, [division]);
+
+  const filteredStudents = students.filter(student =>
+    student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    student.prn.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleStudentSelect = (student: any) => {
+    setSelectedStudent(student);
+    setSearchTerm(student.name);
+    setShowDropdown(false);
   };
+
+  const getRiskColor = (riskScore: number) => {
+    if (riskScore >= 70) return 'text-red-600 bg-red-50';
+    if (riskScore >= 40) return 'text-yellow-600 bg-yellow-50';
+    return 'text-green-600 bg-green-50';
+  };
+
+  const getRiskLevel = (riskScore: number) => {
+    if (riskScore >= 70) return 'High Risk';
+    if (riskScore >= 40) return 'Medium Risk';
+    return 'Low Risk';
+  };
+
+  if (loading) {
+    return <div className="p-8">Loading...</div>;
+  }
 
   return (
     <div className="p-8 space-y-8">
       <header className="bg-[#1e3a8a] text-white p-4 rounded-lg shadow-md">
-        <h2 className="text-xl font-bold">Risk Predictor</h2>
+        <h2 className="text-xl font-bold">Risk Prediction Dashboard</h2>
+        <p className="text-sm opacity-90">Search and analyze individual student risk factors</p>
       </header>
 
-      <div className="bg-white p-8 rounded-xl shadow-lg border max-w-2xl mx-auto">
-        <div className="flex items-center space-x-2 mb-8 border-b pb-4">
-          <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
-          <h3 className="text-lg font-bold text-gray-800">Student Performance Prediction</h3>
+      <div className="relative">
+        <div className="relative">
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setShowDropdown(true);
+              if (!e.target.value) setSelectedStudent(null);
+            }}
+            onFocus={() => setShowDropdown(true)}
+            className="w-full pl-10 pr-4 py-3 rounded-xl border shadow-sm outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Type student name or PRN..."
+          />
         </div>
 
-        <form onSubmit={handlePredict} className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Student Name</label>
-              <input
-                type="text"
-                value={name}
-                onChange={e => setName(e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg outline-none focus:ring-1 focus:ring-blue-500"
-                placeholder="Enter student name"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Subject</label>
-              <input
-                type="text"
-                value={subject}
-                onChange={e => setSubject(e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg outline-none focus:ring-1 focus:ring-blue-500"
-                placeholder="Subject"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Marks (%)</label>
-              <input
-                type="number"
-                value={marks}
-                onChange={e => setMarks(e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg outline-none"
-                placeholder="0-100"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Attendance (%)</label>
-              <input
-                type="number"
-                value={attendance}
-                onChange={e => setAttendance(e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg outline-none"
-                placeholder="0-100"
-              />
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            className="w-full bg-[#1e3a8a] text-white py-3 rounded-lg font-bold hover:bg-blue-900 transition shadow-lg mt-4"
-          >
-            Predict Score
-          </button>
-        </form>
-
-        {prediction !== null && (
-          <div className="mt-8 p-6 bg-blue-50 rounded-xl border border-blue-100 text-center animate-in fade-in zoom-in">
-            <p className="text-sm font-medium text-blue-800 uppercase tracking-wider">Predicted Risk Score</p>
-            <h4 className={`text-5xl font-black mt-2 ${prediction > 70 ? 'text-red-600' : prediction > 40 ? 'text-orange-500' : 'text-green-600'}`}>
-              {prediction}
-            </h4>
-            <p className="text-xs text-gray-500 mt-2 italic">
-              {prediction > 70 ? 'High probability of dropout. Immediate counseling required.' : 
-               prediction > 40 ? 'Moderate risk. Monitoring recommended.' : 'Low risk. Performance is stable.'}
-            </p>
+        {showDropdown && searchTerm && filteredStudents.length > 0 && (
+          <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+            {filteredStudents.slice(0, 5).map((student) => (
+              <div
+                key={student._id}
+                onClick={() => handleStudentSelect(student)}
+                className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+              >
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="font-medium text-gray-800">{student.name}</p>
+                    <p className="text-sm text-gray-500">{student.prn}</p>
+                  </div>
+                  <span className={`px-2 py-1 rounded text-xs font-bold ${getRiskColor(student.riskScore || 0)}`}>
+                    {student.riskScore || 0}
+                  </span>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
+
+      {selectedStudent && (
+        <div className="bg-white rounded-xl shadow-sm border p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h3 className="text-2xl font-bold text-gray-800">{selectedStudent.name}</h3>
+              <p className="text-gray-600">{selectedStudent.prn} • Division {selectedStudent.division}</p>
+            </div>
+            <div className={`px-4 py-2 rounded-lg font-bold text-lg ${getRiskColor(selectedStudent.riskScore || 0)}`}>
+              {getRiskLevel(selectedStudent.riskScore || 0)}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <p className="text-xs text-gray-500 font-bold uppercase">CGPA</p>
+              <p className="text-2xl font-bold text-blue-600">{selectedStudent.cgpa}</p>
+            </div>
+            <div className="bg-green-50 p-4 rounded-lg">
+              <p className="text-xs text-gray-500 font-bold uppercase">Attendance</p>
+              <p className="text-2xl font-bold text-green-600">{selectedStudent.attendance}%</p>
+            </div>
+            <div className="bg-orange-50 p-4 rounded-lg">
+              <p className="text-xs text-gray-500 font-bold uppercase">Backlogs</p>
+              <p className="text-2xl font-bold text-orange-600">{selectedStudent.backlogs || 0}</p>
+            </div>
+            <div className={`p-4 rounded-lg ${getRiskColor(selectedStudent.riskScore || 0)}`}>
+              <p className="text-xs font-bold uppercase opacity-70">Risk Score</p>
+              <p className="text-2xl font-bold">{selectedStudent.riskScore || 0}</p>
+            </div>
+          </div>
+
+          {selectedStudent.riskReasons && selectedStudent.riskReasons.length > 0 && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <h4 className="font-bold text-red-800 mb-2">Risk Factors:</h4>
+              <ul className="space-y-1">
+                {selectedStudent.riskReasons.map((reason: string, index: number) => (
+                  <li key={index} className="text-sm text-red-700 flex items-center">
+                    <span className="w-2 h-2 bg-red-400 rounded-full mr-2"></span>
+                    {reason}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+
+      {!selectedStudent && (
+        <div className="bg-gray-50 rounded-xl p-8 text-center">
+          <h3 className="text-lg font-medium text-gray-700 mb-2">Search for a Student</h3>
+          <p className="text-gray-500">Type a student's name or PRN in the search box above</p>
+        </div>
+      )}
     </div>
   );
 };

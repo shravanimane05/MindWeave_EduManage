@@ -1,18 +1,63 @@
 
 import React from 'react';
-import { dbService } from '../services/dbService';
-import { sendAlertToStudent } from '../services/twilioService';
 
 const SearchStudent: React.FC<{ division: string }> = ({ division }) => {
   const [search, setSearch] = React.useState('');
-  const students = dbService.getStudentsByDivision(division);
+  const [students, setStudents] = React.useState<any[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  
+  React.useEffect(() => {
+    const fetchStudents = async () => {
+      try {
+        const response = await fetch(`http://localhost:4000/api/students?division=${division}`);
+        const data = await response.json();
+        setStudents(data.students || []);
+      } catch (error) {
+        console.error('Error fetching students:', error);
+        setStudents([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchStudents();
+  }, [division]);
+  
   const filtered = students.filter(s => 
     s.name.toLowerCase().includes(search.toLowerCase()) || 
     s.prn.toLowerCase().includes(search.toLowerCase())
   );
 
   const handleNotify = async (student: any) => {
-    await sendAlertToStudent(student, 'General');
+    const message = prompt(`Send alert to ${student.name}:\n\nSuggested message based on risk factors:`, 
+      `Dear ${student.name}, your academic performance needs attention. Please visit the counseling office to discuss your ${student.riskScore}% risk score and create an improvement plan.`);
+    
+    if (message && message.trim()) {
+      try {
+        const response = await fetch('http://localhost:4000/api/send-notification', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            studentPrn: student.prn,
+            studentName: student.name,
+            phoneNumber: student.phone,
+            message: message.trim(),
+            riskScore: student.riskScore
+          })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          alert(`✅ Alert sent to ${student.name}!\n\nThe message will appear in their student portal notifications.`);
+        } else {
+          alert(`❌ Failed to send alert: ${result.error}`);
+        }
+      } catch (error) {
+        console.error('Alert error:', error);
+        alert('❌ Failed to send alert');
+      }
+    }
   };
 
   return (
@@ -35,7 +80,11 @@ const SearchStudent: React.FC<{ division: string }> = ({ division }) => {
       </div>
 
       <div className="space-y-6">
-        {filtered.length > 0 ? filtered.map(student => (
+        {loading ? (
+          <div className="p-20 text-center bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
+            <p className="text-gray-500 italic">Loading students...</p>
+          </div>
+        ) : filtered.length > 0 ? filtered.map(student => (
           <div key={student.id} className="bg-white p-6 rounded-2xl shadow-sm border group hover:border-blue-300 transition-all">
             <div className="flex justify-between items-start mb-6">
               <div className="flex items-center space-x-4">
@@ -47,9 +96,12 @@ const SearchStudent: React.FC<{ division: string }> = ({ division }) => {
                   <p className="text-xs text-gray-500">PRN: {student.prn}</p>
                 </div>
               </div>
-              <button onClick={() => handleNotify(student)} className="bg-orange-100 text-orange-700 hover:bg-orange-200 transition px-4 py-2 rounded-lg text-xs font-bold flex items-center border border-orange-200">
+              <button 
+                onClick={() => handleNotify(student)} 
+                className="px-4 py-2 rounded-lg text-xs font-bold flex items-center border transition bg-orange-100 text-orange-700 hover:bg-orange-200 border-orange-200"
+              >
                 <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 004.708 4.708l.773-1.548a1 1 0 011.06-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" /></svg>
-                Twilio Alert
+                Notify
               </button>
             </div>
 
@@ -74,7 +126,7 @@ const SearchStudent: React.FC<{ division: string }> = ({ division }) => {
 
             <div className="mt-6 flex justify-between items-center border-t pt-4">
                <div className="text-xs text-gray-400 italic">Contact: {student.phone} | {student.email}</div>
-               <button onClick={() => { if(confirm('Remove student record?')) { dbService.deleteStudent(student.id); window.location.reload(); } }} className="text-red-400 hover:text-red-600 text-[10px] font-bold uppercase tracking-tighter">Delete Student</button>
+               <button onClick={() => { if(confirm('Remove student record?')) { alert('Delete functionality moved to backend API'); } }} className="text-red-400 hover:text-red-600 text-[10px] font-bold uppercase tracking-tighter">Delete Student</button>
             </div>
           </div>
         )) : (

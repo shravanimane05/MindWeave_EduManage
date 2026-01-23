@@ -308,24 +308,34 @@ class DBService {
   }
 
   // Merging Logic: Teacher uploads end sem marks by PRN
-  async uploadStudentData(newData: any[]) {
+  async uploadStudentData(newData: any[], division?: string) {
     const updatedStudents = [...this.students];
     let matchedCount = 0;
     let unmatchedPRNs: string[] = [];
-    
+    let blockedPRNs: string[] = []; // PRNs found but outside teacher's division
+
     newData.forEach(record => {
       const prn = record.prn || record.PRN;
       const endsemMarks = record.endsemMarks || record.endsem || record.endSemMarks || record.marks || 0;
-      
+
       if (!prn) return;
-      
+
       const existingIdx = updatedStudents.findIndex(s => s.prn === prn);
-      
+
       if (existingIdx > -1) {
-        // Update existing student with end sem marks
-        updatedStudents[existingIdx] = { 
-          ...updatedStudents[existingIdx], 
-          endsemMarks: parseInt(endsemMarks) || 0,
+        const existing = updatedStudents[existingIdx];
+        // If a division is provided (teacher uploading), only allow updates for that division
+        if (division && existing.division !== division) {
+          blockedPRNs.push(prn);
+          return;
+        }
+
+        // Update existing student with end sem marks and merge allowed fields
+        updatedStudents[existingIdx] = {
+          ...existing,
+          endsemMarks: parseInt(endsemMarks) || existing.endsemMarks || 0,
+          attendance: record.attendance !== undefined ? Math.min(100, Math.max(0, parseInt(record.attendance) || 0)) : existing.attendance,
+          cgpa: record.cgpa !== undefined ? parseFloat(record.cgpa) || existing.cgpa : existing.cgpa,
           ...record // Merge any other fields from the upload
         };
         matchedCount++;
@@ -337,12 +347,15 @@ class DBService {
 
     this.students = updatedStudents;
     this.save();
-    
+
+    if (blockedPRNs.length > 0) {
+      console.warn(`${blockedPRNs.length} PRNs blocked (not in division ${division}): ${blockedPRNs.join(', ')}`);
+    }
     if (unmatchedPRNs.length > 0) {
       console.warn(`${unmatchedPRNs.length} PRNs not found: ${unmatchedPRNs.join(', ')}`);
     }
-    
-    return { success: true, matchedCount, unmatchedPRNs };
+
+    return { success: true, matchedCount, unmatchedPRNs, blockedPRNs };
   }
 
   // Update student attendance and recalculate risk score

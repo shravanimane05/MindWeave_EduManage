@@ -1,18 +1,71 @@
 
-import React, { useState } from 'react';
-import { dbService } from '../services/dbService';
+import React, { useState, useEffect } from 'react';
 
 const StudentQueries: React.FC<{ division: string }> = ({ division }) => {
   const [search, setSearch] = useState('');
-  const queries = dbService.getAllQueries(division);
+  const [queries, setQueries] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadQueries();
+  }, [division]);
+
+  const loadQueries = async () => {
+    try {
+      // Temporary localStorage solution
+      const allQueries = JSON.parse(localStorage.getItem('queries') || '[]');
+      const divisionQueries = allQueries.filter((q: any) => q.division === division);
+      setQueries(divisionQueries);
+    } catch (error) {
+      console.error('Error loading queries:', error);
+      setQueries([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filtered = queries.filter(q => 
     q.studentName.toLowerCase().includes(search.toLowerCase()) || 
     q.title.toLowerCase().includes(search.toLowerCase())
   );
 
-  const handleUpdateStatus = (id: string, status: 'Solved' | 'Pending') => {
-    dbService.updateQueryStatus(id, status);
-    window.location.reload();
+  const handleUpdateStatus = async (id: string, status: 'Solved' | 'Pending') => {
+    try {
+      // Temporary localStorage solution
+      const allQueries = JSON.parse(localStorage.getItem('queries') || '[]');
+      const updatedQueries = allQueries.map((q: any) => 
+        q.id === id ? { ...q, status } : q
+      );
+      localStorage.setItem('queries', JSON.stringify(updatedQueries));
+      loadQueries();
+    } catch (error) {
+      console.error('Error updating status:', error);
+    }
+  };
+
+  const handleSendReply = async (query: any) => {
+    const reply = prompt(`Reply to ${query.studentName}:`, '');
+    if (reply && reply.trim()) {
+      try {
+        // Temporary localStorage solution
+        const allQueries = JSON.parse(localStorage.getItem('queries') || '[]');
+        const updatedQueries = allQueries.map((q: any) => 
+          q.id === query.id ? { 
+            ...q, 
+            teacherReply: reply.trim(),
+            teacherName: 'Teacher',
+            replyDate: new Date().toISOString().split('T')[0],
+            status: 'Replied'
+          } : q
+        );
+        localStorage.setItem('queries', JSON.stringify(updatedQueries));
+        loadQueries();
+        alert('Reply sent successfully!');
+      } catch (error) {
+        console.error('Error sending reply:', error);
+        alert('Failed to send reply');
+      }
+    }
   };
 
   return (
@@ -55,7 +108,12 @@ const StudentQueries: React.FC<{ division: string }> = ({ division }) => {
              </div>
 
              <div className="flex space-x-3">
-               <button className="bg-blue-600 text-white text-xs px-6 py-2 rounded-lg font-bold hover:bg-blue-700 transition">Send Reply</button>
+               <button 
+                 onClick={() => handleSendReply(query)}
+                 className="bg-blue-600 text-white text-xs px-6 py-2 rounded-lg font-bold hover:bg-blue-700 transition"
+               >
+                 Send Reply
+               </button>
                {query.status !== 'Solved' && (
                  <button 
                   onClick={() => handleUpdateStatus(query.id, 'Solved')}
