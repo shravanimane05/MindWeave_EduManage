@@ -17,7 +17,7 @@ Student drop-outs are a significant challenge in educational institutions. Early
 * AI-based drop-out prediction using integrated services
 * Interactive, user-friendly React frontend
 * Dashboard for visualizing student risk scores
-* Counselling recommendations for at-risk students
+* Counselling recommendations for students at-risk
 * Easy deployment on local development
 
 ---
